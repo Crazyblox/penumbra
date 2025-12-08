@@ -4,7 +4,7 @@
 --[[ Requires ]]
 local Settings =	require( `../lib/Settings` )
 local Text =		require( `../lib/Text` )
-local Textures =	require( `../lib/Textures/init` )
+local Textures =	require( `../lib/Textures` )
 local VM =			require( `../plugin/vm` )
 local Display =		require( `../plugin/display` )
 local Input =		require( `../plugin/input` )

@@ -5,7 +5,7 @@
 -- perform convolutional filters.
 -- More sync filters are likely to be packaged in future versions for as long as they and
 -- the sync feature itself behaves correctly in the future.
-local Pipeline = require( `../../../Pipeline/init` )
+local Pipeline = require( `../../../Pipeline` )
 return function( T: number, In: {vector}, Out: {vector} )
 	local ExtUp = Pipeline.Shared.External_Above
 	local ExtDn = Pipeline.Shared.External_Below

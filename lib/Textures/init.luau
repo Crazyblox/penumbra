@@ -5,8 +5,8 @@
 
 -- Requires
 local Settings =	require( `../../lib/Settings` )
-local PNG =			require( `../PNG/init` )
-local Base64 =		require( `../Base64/init` )
+local PNG =			require( `../PNG` )
+local Base64 =		require( `../Base64` )
 
 -- [[ TYPES ]] --
 local Types = require( `./Types` )

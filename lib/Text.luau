@@ -1,9 +1,9 @@
 --!strict
 --!native
 local Settings = require( `./Settings` )
-local Textures = require( `./Textures/init` )
+local Textures = require( `./Textures` )
 local VM = require( `../plugin/vm` )
-assert( VM.Process == VM.MainProcess, `'./lib/Text/init.luau' can only be required by the main process.`)
+assert( VM.Process == VM.MainProcess, `'./lib/Text.luau' can only be required by the main process.`)
 
 --[[
 	Penumbra: Text

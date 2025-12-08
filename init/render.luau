@@ -5,8 +5,8 @@
 local Settings =	require( "../lib/Settings" )
 local VM =			require( "../plugin/vm" )
 local Event =		require( "../plugin/event" )
-local Textures =	require( "../lib/Textures/init" )
-local Pipeline =	require( "../lib/Pipeline/init" )
+local Textures =	require( "../lib/Textures" )
+local Pipeline =	require( "../lib/Pipeline" )
 --[[ Locals ]]
 local Program: Pipeline.Program
 local PipelineThread: thread

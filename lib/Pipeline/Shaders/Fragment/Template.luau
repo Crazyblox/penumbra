@@ -12,7 +12,7 @@
 ]]
 
 -- [[ REQUIRES ]] --
-local S, Textures = require( "../../../Settings" ), require( "../../../Textures/init" )
+local S, Textures = require( "../../../Settings" ), require( "../../../Textures" )
 -- [[ TYPES ]] --
 type f64=number; type vec=vector
 -- [[ LOCALS ]] --

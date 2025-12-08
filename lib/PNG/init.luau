@@ -10,7 +10,7 @@
 local ChunkTypes = require("./ChunkTypes")
 local Types = require("./Types")
 
-local chunkReaders = require("./chunks/init")
+local chunkReaders = require("./chunks")
 local crc32 = require("./crc32")
 local inflate = require("./inflate")
 

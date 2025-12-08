@@ -2,7 +2,7 @@
 --!native
 -- Penumbra: Fragment Shader - Mini: Squircle [Source: https://www.shadertoy.com/view/WcGXRD]
 type f64=number; type vec=vector
-local S, Textures = require( "../../../Settings" ), require( "../../../Textures/init" )
+local S, Textures = require( "../../../Settings" ), require( "../../../Textures" )
 local vec =	vector.create;local vec_1, vec_0_5, vec_0 = vec(1,1,1), vec(.5,.5,.5), vec(0,0);local iResolution:vec =vec(S.Display_Res.x,S.Display_Res.y);local iResolution_div:vec = iResolution+vec(0,0,1);
 local radians, degrees, sin, cos, tan, asin, acos, atan, sinh, cosh, tanh, pow, exp, log, exp2, log2, sqrt, inversesqrt, abs, sign, floor, ceil, fract, mod, modf, min, max, clamp, mix, step, smoothstep, length, distance, dot, cross, normalize = -- Requiring implementation: asinh, acosh, atanh, exp2, inversesqrt, trunc, step, smoothstep, distance, faceforward, reflect, refract, determinant, outerProduct, matrixCompMult, inverse, transpose
 	math.rad, math.deg, math.sin, math.cos, math.tan, math.asin, math.acos, math.atan, math.sinh, math.cosh, math.tanh, math.pow, math.exp, math.log, math.exp, function( n:f64 ):f64 return math.log( n, 2. ) end, math.sqrt, math.sqrt, math.abs, math.sign, math.floor, math.ceil, function( n:f64 ):f64 return n - math.floor(n) end, function( n:f64, m:f64 ):f64 return n % m end, math.modf, math.min, math.max, math.clamp, math.lerp, function( edge:f64, x:f64 ):f64 return x end, function( a:f64, b:f64, x:f64 ):f64 return x end, vector.magnitude, vector.magnitude, vector.dot, vector.cross, vector.normalize  
