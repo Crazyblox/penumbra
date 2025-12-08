@@ -1,12 +1,12 @@
 --!strict
 --!native
 --[[ Requires ]]
-local Settings =	require( "../Settings" )
-local Deepfreeze =	require( "../../lib/Deepfreeze" )
-local VM =			require( "../../plugin/vm" )
-local Task =		require( "../../plugin/task" )
+local Settings =	require( "./Settings" )
+local Deepfreeze =	require( "./Deepfreeze" )
+local VM =			require( "../plugin/vm" )
+local Task =		require( "../plugin/task" )
 -- Types/Export
-local Types =			require( "./Types" )
+local Types =			require( "@self/Types" )
 export type Shader = 	Types.Shader
 export type Swapchain = Types.Swapchain
 export type Program = 	Types.Program
@@ -32,7 +32,7 @@ Pipeline.Shared = table.freeze( {
 	Send_Below = table.create( Settings.Actor_Res.x * 2, vector.zero )
 } )
 -- Kernel indexes; used by some sync-based filters.
-Pipeline.Kernels = require( `./Kernels` )
+Pipeline.Kernels = require( `@self/Kernels` )
 -- SyncFunction
 local VM_IntendedNeighbor_Above: number = math.clamp( Settings.Actor_RenderNum - 1, 1, Settings.Render_Threads )
 local VM_IntendedNeighbor_Below: number = math.clamp( Settings.Actor_RenderNum + 1, 1, Settings.Render_Threads )
@@ -41,7 +41,6 @@ local VM_BelowNeighbor = VM.GetVMFromName( `VM_Render_{ VM_IntendedNeighbor_Belo
 local VM_NoneAbove: boolean = VM.Process == VM_AboveNeighbor 
 local VM_NoneBelow: boolean = VM.Process == VM_BelowNeighbor
 local SyncFunction = function( T: number, In: {vector}, Out: {vector} )
-	debug.profilebegin("Sync - Send")
 	-- Copy # of own framebuffer into all of Send_Below.
 	-- Applies #Send_Below offset to cursor so lower portion is accurately selected.
 	table.move( In, 1 + Settings.Actor_Res.x * ( Settings.Actor_Res.y - 2 ), #Pipeline.Shared.Send_Below, 1, Pipeline.Shared.Send_Below )
@@ -50,7 +49,6 @@ local SyncFunction = function( T: number, In: {vector}, Out: {vector} )
 	-- Send data
 	VM_AboveNeighbor:Send( VM_NoneAbove and "FromAbove" or "FromBelow", Pipeline.Shared.Send_Above )
 	VM_BelowNeighbor:Send( VM_NoneBelow and "FromBelow" or "FromAbove", Pipeline.Shared.Send_Below )
-	debug.profileend()
 	-- Yields thread running function; ensures that sync occurs before resuming thread
 	coroutine.yield( coroutine.running() )
 	return In
@@ -86,7 +84,7 @@ local function FetchShaders( Profile: {string} ): {Shader}
 		table.insert( Shaders, require( `./Shaders/{ Filter }` ) :: any )
 		HasTonemapper = ShaderDir == "Tone" or HasTonemapper
 	end
-	if not HasTonemapper then warn("No tonemapper provided; unbound values may cause integer under/overflow in output") end
+	if not HasTonemapper then print("No tonemapper provided; unbound values may cause integer under/overflow in output") end
 	return table.freeze( Shaders )
 end
 -- Called by './init/render.luau' prior to each successive shader call

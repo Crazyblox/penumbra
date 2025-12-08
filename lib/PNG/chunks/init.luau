@@ -2,7 +2,7 @@
 --!native
 
 return {
-	IHDR = require("./IHDR"),
-	PLTE = require("./PLTE"),
-	tRNS = require("./tRNS"),
+	IHDR = require("@self/IHDR"),
+	PLTE = require("@self/PLTE"),
+	tRNS = require("@self/tRNS"),
 }

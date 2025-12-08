@@ -4,12 +4,12 @@
 --Textures: Parses and provides texture data via appropriate types.
 
 -- Requires
-local Settings =	require( `../../lib/Settings` )
-local PNG =			require( `../PNG` )
-local Base64 =		require( `../Base64` )
+local Settings =	require( `./Settings` )
+local PNG =			require( `./PNG` )
+local Base64 =		require( `./Base64` )
 
 -- [[ TYPES ]] --
-local Types = require( `./Types` )
+local Types = require( `@self/Types` )
 export type Texture = Types.Texture
 export type Cubemap = Types.Cubemap
 export type LoadTexture = Types.LoadTexture
@@ -143,7 +143,7 @@ function Textures.Load.Base( cfg: LoadTexture?, ...: string ): ...Texture
 		local TextureData = require( `./Assets/{ TexturePath }` ) :: any
 		-- [Redundant?] Replace texture with fallback if data doesn't exist
 		if not TextureData then
-			warn(`Texture '{ TexturePath }' doesn't exist: Providing fallback`)
+			print(`Texture '{ TexturePath }' doesn't exist: Providing fallback`)
 			table.insert( LoadedTextures, FallbackTexture )
 			continue
 		end
