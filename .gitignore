@@ -1,0 +1,11 @@
+# Config
+.env
+.env.local
+/.vscode
+
+# Directories
+/Temp
+
+# Extensions
+*.tmp
+*.log
