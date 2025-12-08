@@ -140,7 +140,7 @@ function Textures.Load.Base( cfg: LoadTexture?, ...: string ): ...Texture
 			continue
 		end
 		-- [Errors if texture isn't present]
-		local TextureData = require( `./Assets/{ TexturePath }` ) :: any
+		local TextureData = require( `@self/Assets/{ TexturePath }` ) :: any
 		-- [Redundant?] Replace texture with fallback if data doesn't exist
 		if not TextureData then
 			print(`Texture '{ TexturePath }' doesn't exist: Providing fallback`)

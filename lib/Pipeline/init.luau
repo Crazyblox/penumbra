@@ -81,7 +81,7 @@ local function FetchShaders( Profile: {string} ): {Shader}
 	for _, Filter: string in Profile do
 		local ShaderDir: string = string.split( Filter, `/` )[1]
 		if table.find( SyncList, ShaderDir ) then table.insert( Shaders, SyncFunction ) end
-		table.insert( Shaders, require( `./Shaders/{ Filter }` ) :: any )
+		table.insert( Shaders, require( `@self/Shaders/{ Filter }` ) :: any )
 		HasTonemapper = ShaderDir == "Tone" or HasTonemapper
 	end
 	if not HasTonemapper then print("No tonemapper provided; unbound values may cause integer under/overflow in output") end
