@@ -1,106 +1,115 @@
 --!strict
 --!native
 --[[ Requires ]]
-local Settings =	require( "./Settings" )
-local Deepfreeze =	require( "./Deepfreeze" )
-local VM =			require( "../plugin/vm" )
-local Task =		require( "../plugin/task" )
+local Settings = 	require(`../`)()
+local Deepfreeze =	require( `./deepfreeze` )
+local VM =			require( `../../plugin/process` )
+local Task =		require( `../../plugin/task` )
+
 -- Types/Export
-local Types =			require( "@self/Types" )
+local Types =			require( "@self/types" )
 export type Shader = 	Types.Shader
 export type Swapchain = Types.Swapchain
 export type Program = 	Types.Program
+
 --[[ Locals ]]
 local Pipeline = {}
 local SyncList = { "Sync" }
+
 --[[ Functions ]]
 -- Functions for generating types of buffers; all initialized to opaque/white when applicable
-local MakeBuffer = table.freeze( {
-	Vector = function(): {vector} return table.create( Settings.Actor_Res.x * Settings.Actor_Res.y, vector.one ) end,
-	Buffer = function(): buffer
-		local NewBuffer: buffer = buffer.create( Settings.Actor_Res.x * Settings.Actor_Res.y * 4 )
-		buffer.fill( NewBuffer, 0, 0xFF )
-		return NewBuffer
+local Buffers = table.freeze( {
+	RGBAu8_Make = function(): buffer
+		local b = buffer.create( Settings.Actor_Res.x * Settings.Actor_Res.y * 4)
+		buffer.fill( b, 0, 0xFF )
+		return b
+	end,
+	RGBAu8_Length = function()
+		return Settings.Actor_Res.x * Settings.Actor_Res.y * 4
+	end,
+	Vector = function(): {vector}
+		return table.create( Settings.Actor_Res.x * Settings.Actor_Res.y, vector.one )
 	end
 } )
-Pipeline.MakeBuffer = MakeBuffer
+Pipeline.Buffers = Buffers
+
 -- Shared: Localised framebuffer slices from other render threads which get updated thru './init/render.luau' after SyncFunction is called.
 Pipeline.Shared = table.freeze( {
-	External_Above = table.create( Settings.Actor_Res.x * Settings.Actor_Res.y, vector.zero ),
-	External_Below = table.create( Settings.Actor_Res.x * Settings.Actor_Res.y, vector.zero ),
-	Send_Above = table.create( Settings.Actor_Res.x * 2, vector.zero ),
-	Send_Below = table.create( Settings.Actor_Res.x * 2, vector.zero )
+	External_Above = Pipeline.Buffers.RGBAu8_Make( Settings.Actor_Res.x * Settings.Actor_Res.y ),
+	External_Below = Pipeline.Buffers.RGBAu8_Make( Settings.Actor_Res.x * Settings.Actor_Res.y )
 } )
+
 -- Kernel indexes; used by some sync-based filters.
-Pipeline.Kernels = require( `@self/Kernels` )
+--Pipeline.Kernels = require( `@self/kernels` )
+
 -- SyncFunction
-local VM_IntendedNeighbor_Above: number = math.clamp( Settings.Actor_RenderNum - 1, 1, Settings.Render_Threads )
-local VM_IntendedNeighbor_Below: number = math.clamp( Settings.Actor_RenderNum + 1, 1, Settings.Render_Threads )
-local VM_AboveNeighbor = VM.GetVMFromName( `VM_Render_{ VM_IntendedNeighbor_Above }` )
-local VM_BelowNeighbor = VM.GetVMFromName( `VM_Render_{ VM_IntendedNeighbor_Below }` )
-local VM_NoneAbove: boolean = VM.Process == VM_AboveNeighbor 
-local VM_NoneBelow: boolean = VM.Process == VM_BelowNeighbor
-local SyncFunction = function( T: number, In: {vector}, Out: {vector} )
-	-- Copy # of own framebuffer into all of Send_Below.
-	-- Applies #Send_Below offset to cursor so lower portion is accurately selected.
-	table.move( In, 1 + Settings.Actor_Res.x * ( Settings.Actor_Res.y - 2 ), #Pipeline.Shared.Send_Below, 1, Pipeline.Shared.Send_Below )
-	-- Copy # of own framebuffer into all of Send_Above
-	table.move( In, 1, #Pipeline.Shared.Send_Above, 1, Pipeline.Shared.Send_Above )
-	-- Send data
-	VM_AboveNeighbor:Send( VM_NoneAbove and "FromAbove" or "FromBelow", Pipeline.Shared.Send_Above )
-	VM_BelowNeighbor:Send( VM_NoneBelow and "FromBelow" or "FromAbove", Pipeline.Shared.Send_Below )
-	-- Yields thread running function; ensures that sync occurs before resuming thread
+local Process_IntendedNeighbor_Above: number = math.clamp( Settings.Actor_RenderNum - 1, 1, Settings.Render_Threads )
+local Process_IntendedNeighbor_Below: number = math.clamp( Settings.Actor_RenderNum + 1, 1, Settings.Render_Threads )
+local Process_AboveNeighbor: VM.Process = VM.GetProcessFromName( `Process_Render_{ Process_IntendedNeighbor_Above }` )
+local Process_BelowNeighbor: VM.Process = VM.GetProcessFromName( `Process_Render_{ Process_IntendedNeighbor_Below }` )
+local Process_NoneAbove: boolean = VM.Process == Process_AboveNeighbor 
+local Process_NoneBelow: boolean = VM.Process == Process_BelowNeighbor
+
+-- !! UNSUPPORTED: Pending global buffer sharing revamp
+local SyncFunction = function( T: number, In: buffer, Out: buffer )
+	-- Send this render thread's framebuffer data to other threads.
+	Process_AboveNeighbor:Send( Process_NoneAbove and "FromAbove" or "FromBelow", In )
+	Process_BelowNeighbor:Send( Process_NoneBelow and "FromBelow" or "FromAbove", In )
+	-- Yields thread running function; the render worker now waits for word from the others via 'main.luau'
 	coroutine.yield( coroutine.running() )
 	return In
 end
+
 -- ExecuteProgram: Executes a program (Collection of shaders) before returning output data. 
 local PipelineThread: thread
 local ReceivedAbove, ReceivedBelow = false, false
 local Shared_T: VM.SharedData = VM.RequireShared( "FrameTime" )
-local function ExecuteProgram( self: Program, In: {vector}? ): {vector}
+local function ExecuteProgram( self: Program, In: buffer? ): buffer
 	-- Set thread
 	PipelineThread = coroutine.running()
 	-- Sync & read from global FrameTime 
 	Shared_T:SyncFrom()						
 	local T: number = buffer.readf64( Shared_T.Buffer, 0 )
 	-- Grab Read/Write Swapchain buffers
-	local Read: {vector}, Write: {vector} =	self.Swapchain:Swap()
+	local Read: buffer, Write: buffer =	self.Swapchain:Swap()
 	-- Execute shaders in order
 	for iShader: number = 1, #self.Shaders do		
 		Read, Write = self.Swapchain:Swap(
-			self.Shaders[ iShader ]( T, Read, Write )
+			self.Shaders[ iShader ]( T, Read, Write, true )
 		)
 	end
-	-- Program complete; return resulting data
+	-- Program complete; return the finishing buffer
 	return Read								
 end
--- Iterates through given profile to create shader array, inserting steps like 'Sync' along the way if needed.
+
+-- Iterates through given profile to create shader array.
 local function FetchShaders( Profile: {string} ): {Shader}
 	local Shaders: {Shader} = {}
-	local HasTonemapper: boolean = false
 	for _, Filter: string in Profile do
-		local ShaderDir: string = string.split( Filter, `/` )[1]
-		if table.find( SyncList, ShaderDir ) then table.insert( Shaders, SyncFunction ) end
-		table.insert( Shaders, require( `@self/Shaders/{ Filter }` ) :: any )
-		HasTonemapper = ShaderDir == "Tone" or HasTonemapper
+		table.insert( Shaders, require( `@self/shaders/{ Filter }` ) :: Shader )
 	end
-	if not HasTonemapper then print("No tonemapper provided; unbound values may cause integer under/overflow in output") end
 	return table.freeze( Shaders )
 end
--- Called by './init/render.luau' prior to each successive shader call
--- Providing 'ReadFrom' allows the calling script to provide a starting buffer.
-local function Swap( self: Swapchain, ReadFrom: {vector}? ): ( {vector}, {vector} )
+
+-- Called by 'render.luau' prior to each successive shader call
+-- Providing 'ReadFrom' allows the caller to provide a starting buffer.
+local function Swap( self: Swapchain, ReadFrom: buffer? ): ( buffer, buffer )
 	self.Bool = if ReadFrom then self.Bool else not self.Bool
 	return ReadFrom or self.Buffers[ self.Bool ], self.Buffers[ not self.Bool ]
 end
--- Makes Swapchain
+
+-- Makes swapchain
 local function MakeSwap(): Swapchain
 	return {
 		Bool = false,
 		Swap = Swap,
-		Buffers = table.freeze({[true]=MakeBuffer.Vector(),[false]=MakeBuffer.Vector()})
+		Buffers = table.freeze({
+			[true] = Buffers.RGBAu8_Make(),
+			[false] = Buffers.RGBAu8_Make()
+		})
 	} :: Swapchain
 end
+
 -- Creates a program with the given shader profile
 local ProgramIDsCreated: number = 0
 function Pipeline.CreateProgram( Profile: {string} ): Program
@@ -112,5 +121,5 @@ function Pipeline.CreateProgram( Profile: {string} ): Program
 	} 
 	return NewProgram 
 end
--- Return
+
 return Pipeline
