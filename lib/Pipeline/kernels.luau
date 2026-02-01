@@ -1,7 +1,11 @@
 --!strict
 --!native
-local Settings =	require( `../Settings` )
-local Deepfreeze =	require( `../Deepfreeze` )
+
+-- Old, unused part of the project
+-- I wouldn't wanna type these numbers back out if I needed them in the future though...
+
+local Settings =	require(`../../`)()
+local Deepfreeze =	require( `../deepfreeze` )
 local X, Y = Settings.Actor_Res.x, Settings.Actor_Res.y
 local Kernels = {
 	PixelCount = Settings.Actor_Res.x * Settings.Actor_Res.y,
