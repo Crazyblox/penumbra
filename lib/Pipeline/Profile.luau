@@ -1,3 +1,3 @@
 --!strict
 --!native
-return { "Fragment/Multi", "Tone/CRT" }
+return { "fragment/multi" }
