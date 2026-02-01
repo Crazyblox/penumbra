@@ -1,14 +1,25 @@
 --!strict
 --!native
-local Settings = require( `./Settings` )
-local Textures = require( `./Textures` )
-local VM = require( `../plugin/vm` )
-assert( VM.Process == VM.MainProcess, `'./lib/Text.luau' can only be required by the main process.`)
+local Settings = require(`../`)()
+local Textures = require( `./textures` )
+local VM = require( `../../plugin/process` )
+assert( VM.Process == VM.MainProcess, `'text.luau' can only be required by the main process.`)
+
+-- RGBAu8/vec3 buffer read/write functions
+local u32B: number = 4
+local buffer_vec3 = function(b: buffer ,i: number ): vector
+	local n:number = buffer.readu32(b,i)
+	return vector.create(bit32.band(n,0x000000FF),bit32.rshift(bit32.band(n,0x0000FF00),8),bit32.rshift(bit32.band(n,0x00FF0000),16))*.00392156862745098
+end
+local vec3_buffer = function(b: buffer, i: number, v: vector)
+	v*=0xFF
+	buffer.writeu32(b,i,v.x+bit32.lshift(v.y,8)+bit32.lshift(v.z,16)+0xFF000000)
+end
 
 --[[
-	Penumbra: Text
+	Penumbra: text.luau
 	Responsible for drawing text to the screen
-	Only works as expected when required by './init/main.luau'
+	Only works as expected when required by 'main.luau'
 	
 		NOTE:
 	This text renderer is ASCII only.
@@ -17,7 +28,7 @@ assert( VM.Process == VM.MainProcess, `'./lib/Text.luau' can only be required by
 	in a 256x1 monospace row; the renderer will use the image's X and Y dimensions to take care of the rest.
 ]]
 
-local Font_Texture: Textures.Texture = Textures.Load.Base( {}, "Font_Codepage437" )
+local Font_Texture: Textures.Texture = Textures.Load.Base( {{Name="RemoveAlpha"}}, "font_codepage437" )
 local Font_CharSize: vector = vector.create( Font_Texture.Width / 0x100, Font_Texture.Height )
 local Font_CharSize_X: number = Font_Texture.Width / 0x100
 local Font_CharSize_Y: number = Font_Texture.Height
@@ -32,22 +43,22 @@ local function DrawChar( self: buffer, Code: number, Output_X: number, Output_Y:
 	-- The index offset for reading from the font framebuffer
 	local RGB_i_Start: number = RGB_X_i_Start + RGB_Y_i_Start
 	local Out: buffer = self
+	-- Local for speed
+	local Font_Buffer: buffer = Font_Texture.Buffer
 	-- Iterate through character Y rows
 	for i_Y: number = 0, Font_CharSize_Y - 1 do
 		-- 'Buffer_Y_Offset' helps provide appropriate offset for drawing character.
 		local Buffer_Y_Offset: number = ( Output_Y + i_Y ) * Settings.Display_Res.x
 		-- 'RGB_Y' is used as the Y offset for reading from the RGB texture.
 		local RGB_Y_i_Offset: number = i_Y * Font_Texture.Width
-		-- Iterate through X; Each pixel within the given Y row
-		for i_X: number = 0, Font_CharSize_X - 1 do
-			-- Sample of font
-			local RGB: vector = Font_Texture[ RGB_i_Start + i_X + RGB_Y_i_Offset ] * 0xFF
-			-- Where in the buffer the pixel will be written to
-			local bIdx: number = 4 * ( Output_X + i_X + Buffer_Y_Offset )
-			buffer.writeu8( Out,  bIdx,		RGB.x )
-			buffer.writeu8( Out,  bIdx+1,	RGB.y )
-			buffer.writeu8( Out,  bIdx+2,	RGB.z )
-		end
+		-- Copy row of the bitmap font character
+		buffer.copy(
+			Out,
+			( Output_X + Buffer_Y_Offset ) * 4,
+			Font_Buffer,
+			( RGB_i_Start + RGB_Y_i_Offset ) * 4,
+			Font_CharSize_X * 4
+		)
 	end
 end
 
