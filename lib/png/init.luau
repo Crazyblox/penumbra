@@ -42,7 +42,7 @@ local function decode(buf: buffer, options: DecodeOptions?): PNG
 	-- selene: allow(bad_string_escape)
 	assert(buffer.readstring(buf, 0, 8) == "\x89PNG\x0D\x0A\x1A\x0A", "not a PNG")
 
-	local chunks: { Types.Chunk } = table.create(3) -- IHDR, IDAT, IEND
+	local chunks: { Types.Chunk } = table.create(3) :: { Types.Chunk } -- IHDR, IDAT, IEND
 	local offset = 8
 
 	local skipCRC = options ~= nil and options.allowIncorrectCRC == true
@@ -168,7 +168,7 @@ local function decode(buf: buffer, options: DecodeOptions?): PNG
 		paletteColors = palette.colors
 	end
 
-	local rescale
+	local rescale: number
 	if colorType ~= 3 and bitDepth < 8 then
 		rescale = 0xFF / (2 ^ bitDepth - 1)
 	end
@@ -247,7 +247,7 @@ local function decode(buf: buffer, options: DecodeOptions?): PNG
 		end
 
 		local bit = 8
-		local function readValue()
+		local function readValue(): number
 			local b = buffer.readu8(working, newIdx)
 			if bitDepth < 8 then
 				b = bit32.extract(b, bit - bitDepth, bitDepth)
@@ -262,7 +262,7 @@ local function decode(buf: buffer, options: DecodeOptions?): PNG
 				b = bit32.bor(bit32.lshift(b, 8), buffer.readu8(working, newIdx + 1))
 				newIdx += 2
 			end
-			return b
+			return b :: number
 		end
 
 		for y = 1, h do
@@ -273,7 +273,7 @@ local function decode(buf: buffer, options: DecodeOptions?): PNG
 			end
 
 			for x = 1, w do
-				local r, g, b, a
+				local r: number, g: number, b: number, a: number
 
 				if colorType == 0 then
 					local gray = readValue()
@@ -287,7 +287,7 @@ local function decode(buf: buffer, options: DecodeOptions?): PNG
 					b = readValue()
 					a = if r == alphaRed and g == alphaGreen and b == alphaBlue then 0 else defaultAlpha
 				elseif colorType == 3 then
-					local color = paletteColors[readValue() + 1]
+					local color = (paletteColors :: {Color} )[ readValue() + 1 ]
 					r = color.r
 					g = color.g
 					b = color.b
