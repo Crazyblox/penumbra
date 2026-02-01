@@ -2,12 +2,15 @@
 
 -- Represents what constitutes as a texture.
 export type Texture = {
-	Width: number,
-	Height: number,
-	Width0: number,
-	Height0: number,
-	FD: vector,
-	Mult: vector
+	[number]: 			vector,
+	read Buffer:		buffer,
+	read Dimensions:	vector,
+	read Width:			number,
+	read Height:		number,
+	read Width0:		number,
+	read Height0:		number,
+	read FD:			vector,
+	read Mult:			vector | number
 }
 
 -- A superset of textures used in a 3d context.
