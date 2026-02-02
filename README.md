@@ -25,4 +25,4 @@ Issues & PRs are welcome; the intent of Penumbra is to remain as minimal and ele
 What will and what won't be considered is a list I intend to make more clear as the project progresses, but this is a rough start:
 - Before making a PR, create an issue for discussion to see if your intent aligns with this projects goals.
 - PRs with performance implications will be scrutinised heavily. Ensure optimisation, pros/cons, potential drawbacks and repro testing methods are provided.
-- Shader modules which stand out as their own example among the others in the list will be considered; ensure MIT licensing, a source, and adhere to the format in which shader_module outputs.
+- Shader modules which stand out as their own example among the others in the list will be considered; if porting someone else's work, ensure MIT licensing and source is linked. Adhere to the format in which shader_builder outputs.
