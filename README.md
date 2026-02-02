@@ -1,26 +1,28 @@
 # About:
-Penumbra is a versatile and modular Luau graphics rendering pipeline providing developers in CPU-only spaces a GLSL-like workflow, with the obvious difference being that shaders run directly in the Luau language.
+Penumbra is performant modular graphics rendering pipeline which leans into Luau's strengths.
 
-Penumbra includes 11 example fragment shaders, along with other directories such as EOTF (sRGB/lRGB), Tonemapping & Synchronization between render threads for convolutional kernel shaders.
+This provides developers who wish to render shaders in constrained environments (ie. no GPU access).
 
-# Requirements:
-Penumbra requires setting up a valid Pajamas runtime.
-For roblox users, there is a 'no tools required' step-by-step readme for getting Pajamas set up.
+The project contains many example fragment shaders to get started, and is configured by default to run `fragment/multi.luau`.
+
+Each major module has its purpose described at the top, and comments are provided to help for context.
+
+# Setup:
+The Penumbra directory needs to be sat as a direct child of the Pajamas directory in order to run.
+
+Ensure you get it set up successfully in your host runtime before continuing.
+
 Link: https://github.com/Crazyblox/Pajamas
 
-# Roblox - Setup:
-Roblox studio's file sync feature can read from disk and import directly into studio, so we will need to perform the following steps:
-- 1: In roblox studio, go to 'File -> Beta Features -> Script Sync', enable it, close the beta window, then restart studio.
-- 2: On your PC, make a copy of Penumbra (This directory) and store it on your PC in a location that makes sense to you.
-(A .zip folder is provided if you're unfamiliar with using git clone, although it will be susceptible to being out of date.)
-- 3: With an open place in roblox studio, create a folder where you intend to store the Penumbra project. Ensure the directory you are storing Penumbra in supports Actors.
-- 4: Right click on the created folder, go to 'Script Sync -> Sync with Directory...'.
-- 5: In the OS file selection popup, ensure that you have selected your copy of 'Penumbra'.
-- 6: Roblox studio will ask which version to keep. Ensure you click on 'disk version', as we want studio to read the files from disk.
-(Note that while script sync is enabled, there will be a symbol with 2 arrows in the explorer widget, symbolising that these directories are synced - Any edits made in and out of studio will directly update the files stored on your own system.)
+# Notes - Roblox:
+Looking to use this in Roblox?
 
-### Roblox - Disclaimer:
-This setup process requires the use of a roblox studio beta feature, and as such reliability cannot be guaranteed for using in any context beyond attempting to import the files into studio itself.
+Make sure to use the 'file sync' feature so that you can load the code directly into Roblox Studio.
 
-# Setup - Others:
-Penumbra is intended to be supported right out of the gate wherever Pajamas can run and that the Pajamas plugin modules that Penumbra requires is available in the given runtime.
+# Contributions:
+Issues & PRs are welcome; the intent of Penumbra is to remain as minimal and elegant as possible.
+
+What will and what won't be considered is a list I intend to make more clear as the project progresses, but this is a rough start:
+- Before making a PR, create an issue for discussion to see if your intent aligns with this projects goals.
+- PRs with performance implications will be scrutinised heavily. Ensure optimisation, pros/cons, potential drawbacks and repro testing methods are provided.
+- Shader modules which stand out as their own example among the others in the list will be considered; ensure MIT licensing, a source, and adhere to the format in which shader_module outputs.
