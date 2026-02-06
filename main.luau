@@ -20,6 +20,7 @@ local Settings, Params = require(`./`)()
 
 local StatsOpen: boolean
 local TrackFPS: boolean = false
+local FPS_HistorySeconds: number = 3
 local LastFrame: number = os.clock()
 local Frames: { number } = {}
 local Output = Display.New( Settings :: {[string]: any} )
@@ -35,9 +36,10 @@ local function DisplayImage()
 	-- FPS Counter
 	if not TrackFPS then return end
 	local ThisFrameTime: number = os.clock()
+	local SmoothFPS: number = ( #Frames / FPS_HistorySeconds )
 	table.insert( Frames, ThisFrameTime )
 	for Frame: number = #Frames, 1, -1 do
-		if ThisFrameTime - 1 > Frames[ Frame ] then
+		if ThisFrameTime - FPS_HistorySeconds > Frames[ Frame ] then
 			table.remove(Frames, Frame)
 		end
 	end
@@ -52,7 +54,7 @@ local function DisplayImage()
 	debug.profilebegin("Draw text")
 	if StatsOpen then
 		Text( Output.Framebuffer, `Penumbra - Luau Graphics` )
-		Text( Output.Framebuffer, `Thr:{Settings.Render_Threads}, FPS:{#Frames}, MS:{ ( ( os.clock() - LastFrame ) * 1000 ) // 1 }`, true, vector.create( 0, 1 ) )
+		Text( Output.Framebuffer, `Thr:{Settings.Render_Threads}, FPS:{ SmoothFPS // 1 }, MS:{ ( ( 1 / SmoothFPS ) * 1000 ) // 1 }`, true, vector.create( 0, 1 ) )
 		Text( Output.Framebuffer, `X:{ Settings.Display_Res.x }, Y:{ Settings.Display_Res.y }`, true, vector.create( 0, 2 ) )
 	end
 	Text( Output.Framebuffer, `{ StatsOpen and "<" or ">" }T`, true, vector.create( 0, StatsOpen and 3 or 0 ) )
