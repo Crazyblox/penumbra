@@ -23,33 +23,39 @@ end
 
 -- Texture sampling functions
 local function Sampler_Nearest(t: Textures.Texture, UV: vector ): vector
-	UV *= vector.create( t.Width, t.Height )		-- Expand resolution
+	local tWidth:number = t.Width
+	local tHeight:number = t.Height
+	UV *= vector.create( tWidth, tHeight )			-- Expand resolution
 	UV //= 1										-- Set top-left UV integer
-	local x:number	= UV.x % t.Width				-- Wrap U to texture width
-	local y:number	= ( UV.y % t.Height ) * t.Width	-- Wrap V to texture height
+	local x:number	= UV.x % tWidth					-- Wrap U to texture width
+	local y:number	= ( UV.y % tHeight ) * tWidth	-- Wrap V to texture height
 	local i:number	= (x + y) * u32B				-- Set index value
 	return buffer_vec3(t.Buffer, i)					-- Return read value
 end
 -- Texture sampling functions
 local function Sampler_Nearest_IL(t: Textures.Texture, UV: vector ): vector
-	UV *= vector.create( t.Width, t.Height )		-- Expand resolution
+	local tWidth:number = t.Width
+	local tHeight:number = t.Height
+	UV *= vector.create( tWidth, tHeight )			-- Expand resolution
 	UV += Sampler_IL_Offset							-- Add interlace jitter
 	UV //= 1										-- Set top-left UV integer
-	local x:number	= UV.x % t.Width				-- Wrap U to texture width
-	local y:number	= ( UV.y % t.Height ) * t.Width	-- Wrap V to texture height
+	local x:number	= UV.x % tWidth					-- Wrap U to texture width
+	local y:number	= ( UV.y % tHeight ) * tWidth	-- Wrap V to texture height
 	local i:number	= (x + y) * u32B				-- Set index value
 	return buffer_vec3(t.Buffer, i)					-- Return read value
 end
 local function Sampler_Linear( t: Textures.Texture, UV: vector ): vector
-	UV *=				vector.create(t.Width, t.Height)-- Expand resolution
+	local tWidth:number = t.Width
+	local tHeight:number = t.Height
+	UV *=				vector.create(tWidth, tHeight)	-- Expand resolution
 	UV -=				vector.create( .5, .5 )			-- Shifts texture origin from top-left to middle of pixel
 	local UV_0:vector =	UV // 1							-- Set top-left UV integer
 	local UV_1:vector =	UV_0 + vec_1					-- Set bottom-right UV integer
 	local A:vector =	UV - UV_0						-- Fetch XY lerp alpha
-	local S0:number =	UV_0.x % t.Width				-- Fetch X0 index
-	local S2:number =	UV_1.x % t.Width				-- Fetch X1 index
-	local S1:number =	( UV_0.y % t.Height ) * t.Width	-- Fetch Y0 index
-	local S3:number =	( UV_1.y % t.Height ) * t.Width	-- Fetch Y1 index
+	local S0:number =	UV_0.x % tWidth					-- Fetch X0 index
+	local S2:number =	UV_1.x % tWidth					-- Fetch X1 index
+	local S1:number =	( UV_0.y % tHeight ) * tWidth	-- Fetch Y0 index
+	local S3:number =	( UV_1.y % tHeight ) * tWidth	-- Fetch Y1 index
 	local b:buffer =	t.Buffer						-- Fetch texture buffer
 	S0, S1, S2, S3 = S0+S1, S2+S1, S0+S3, S2+S3			-- Calculate sample indexes
 	S0 *= u32B; S1 *= u32B; S2 *= u32B; S3 *= u32B		-- Multiply sample indexes
