@@ -8,17 +8,15 @@
 	from the render threads that it starts up based on the launch parameters given.
 ]]
 
-local Text =	require( `./lib/text` )
-local VM =		require( `./../plugin/process` )
-local Display =	require( `./../plugin/display` )
-local Input =	require( `./../plugin/input` )
-local Event =	require( `./../plugin/event` )
-local Task =	require( `./../plugin/task` )
-
--- Loads in configured settings and launch parameters
 local Settings, Params = require(`./`)()
+local Text =	require(`./lib/text`)
+local VM =		require(`../plugin/process`)
+local Display =	require(`../plugin/display`)
+local Input =	require(`../plugin/input`)
+local Event =	require(`../plugin/event`)
+local Task =	require(`../plugin/task`)
 
-local StatsOpen: boolean
+local StatsOpen: boolean = true
 local TrackFPS: boolean = false
 local FPS_HistorySeconds: number = 3
 local LastFrame: number = os.clock()
@@ -33,6 +31,7 @@ end
 
 -- Frame presentation, text drawing, FPS tracking & frametime
 local function DisplayImage()
+	task.synchronize()
 	-- FPS Counter
 	if not TrackFPS then return end
 	local ThisFrameTime: number = os.clock()
@@ -44,23 +43,14 @@ local function DisplayImage()
 		end
 	end
 	
-	-- Sync/Desync/Sync: Ensures that all render threads carry out their work first before displaying content.
-	Task.synchronize()
-	for resync = 1, #{} + 1 do
-		Task.desynchronize(); Task.synchronize()
-	end
-	
 	-- Configure output text & draw to screen
-	debug.profilebegin("Draw text")
 	if StatsOpen then
 		Text( Output.Framebuffer, `Penumbra - Luau Graphics` )
 		Text( Output.Framebuffer, `Thr:{Settings.Render_Threads}, FPS:{ SmoothFPS // 1 }, MS:{ ( ( 1 / SmoothFPS ) * 1000 ) // 1 }`, true, vector.create( 0, 1 ) )
 		Text( Output.Framebuffer, `X:{ Settings.Display_Res.x }, Y:{ Settings.Display_Res.y }`, true, vector.create( 0, 2 ) )
+		Text( Output.Framebuffer, `{ StatsOpen and "<" or ">" }T`, true, vector.create( 0, StatsOpen and 3 or 0 ) )
 	end
-	Text( Output.Framebuffer, `{ StatsOpen and "<" or ">" }T`, true, vector.create( 0, StatsOpen and 3 or 0 ) )
-	debug.profileend()
 	Output:Present()
-	
 	-- Used to measure frametimes
 	LastFrame = os.clock()
 end
@@ -72,49 +62,59 @@ local function SetTime()
 	buffer.writef64( FrameTime.Buffer, 0, os.clock() - InitTime )
 	FrameTime:SyncTo()
 end
+Input:KeyDown("T", function()
+	StatsOpen = not StatsOpen
+end)
 SetTime()
-
--- Toggler
-StatsOpen = true
-Input:KeyDown( "T", function() StatsOpen = not StatsOpen end )
 
 -- Process_ReadyCheck: Called every time that a render thread reports that it's ready
 local ReadyProcesses: number = 0 -- How many VMs we have received the ready signal from.
 local Render_Processes: {VM.Process} = {}
 local function Process_ReadyCheck()
 	ReadyProcesses += 1
-	
 	-- Exit early if we're still waiting for VMs to be ready.
-	if ( ReadyProcesses :: any ) ~= Settings.Render_Threads then
-		return
-	end
-	
+	if ( ReadyProcesses :: any ) ~= Settings.Render_Threads then return end
 	-- Begin tracking FPS
 	TrackFPS = true
-	
-	-- Hooks
-	Event( SetTime, "Loop" ):Connect()				-- Serial hook to update global time for renderer.
-	Event( DisplayImage, "Loop" ):Connect( true )	-- Parallel hook to execute DisplayImage, responsible for outputting the finished frame.
-	
+	-- Serial hook to update global time for renderer.
+	Event( SetTime, "Loop" ):Connect()				
 	-- Send 'Run' message to start all render threads.
-	for Thread = 1, #Render_Processes do
-		Render_Processes[ Thread ]:Send( "Run" )
+	for i = 1, #Render_Processes do
+		Render_Processes[i]:Send("Run")
 	end
-	
 	-- Mark time that the render threads started running
 	InitTime = os.clock()
 	SetTime()
-	print( `{ VM.Process.Name }: Running`)
+	print( `{ VM.ThisProcess.Name }: Running`)
 end
 
 -- Return function called by Pajamas handler
 return function()
 	-- Hooks
-	VM.Process:Bind( "Ready", Process_ReadyCheck )		-- Performs ready check per readied VM
-	VM.Process:BindParallel( "Present", CopyToBuffer )	-- Receives & stitches buffers from render VMs (For presenting) 
+	-- Performs ready check per readied VM
+	VM.ThisProcess:Bind( "Ready", Process_ReadyCheck )		
+	local SyncNumber:number = 0
+	VM.ThisProcess:BindParallel( "FB_Slice_Sync", function(Cursor:number, Slice: buffer)
+		CopyToBuffer(Cursor, Slice)
+		SyncNumber += 1
+		if SyncNumber >= ReadyProcesses then
+			VM.Broadcast("FB_Full_Sync", Output.Framebuffer)
+			SyncNumber = 0
+		end
+	end)	-- Receives & stitches buffers from render VMs (For presenting) 
+	local PresentNumber:number = 0
+	VM.ThisProcess:BindParallel( "FB_Slice_Sync_Present", function(Cursor: number, Slice: buffer) -- Receives & stitches buffers from render VMs (For presenting) 
+		CopyToBuffer(Cursor, Slice)
+		PresentNumber += 1
+		if PresentNumber >= ReadyProcesses then
+			VM.Broadcast("FB_Full_Sync", Output.Framebuffer)
+			DisplayImage()
+			PresentNumber = 0
+		end	
+	end)
 	
 	-- Setup render VMs
-	print( `{ VM.Process.Name }: Readying { Settings.Render_Threads } render threads...` )
+	print( `{ VM.ThisProcess.Name }: Readying { Settings.Render_Threads } render threads...` )
 	
 	-- Build i-based params
 	local iP = {}
@@ -133,4 +133,8 @@ return function()
 		RenderProcess:Run()
 		Task.wait()
 	end
+	
+	VM.SetEvent("FB_Slice_Sync")
+	VM.SetEvent("FB_Slice_Sync_Present")
+	VM.SetEvent("FB_Full_Sync")
 end
