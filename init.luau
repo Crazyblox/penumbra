@@ -50,7 +50,7 @@ type pIn = {[number]: any}
 
 local S: any = nil
 local P: any = nil
-local process = require( `./plugin/process` )
+local VM = require( `./plugin/process` )
 local display = require( `./plugin/display`)
 
 -- A Pajamas project assumes that data passed to it will always be a strings.
@@ -66,11 +66,11 @@ end
 -- Configures & returns settings and launch parameters to the module function.
 -- This function is only called once in a given VM.
 local function Init(Input: pIn): (self, params)
-	local Params, Misc = 		process.Launch_Parse(Input, require(`@self/.pajamasrc`).params :: any)
+	local Params, Misc = 		VM.Launch_Parse(Input, require(`@self/.pajamasrc`).params :: any)
 	local S_New: any = 			{}
 	S_New.Display_Res = 		display.SanitiseResolution( vector.create(Params.X, Params.Y) )
 	S_New.Render_Threads = 		math.max(Params.Threads, 1) // 1
-	S_New.Display_Resample = 	Params.Resample and "Bilinear" or "Nearest"
+	S_New.Display_Resample = 	if ( Params.Resample :: any ) == true then "Bilinear" else "Nearest"
 	S_New.Display_Res //= 		1
 	S_New.Display_Res = 		vector.create((S_New.Display_Res.x//2)*2,S_New.Display_Res.y)
 	S_New.Display_Res =			vector.clamp(
@@ -78,7 +78,7 @@ local function Init(Input: pIn): (self, params)
 		vector.create(1, 1), vector.create(1024, 1024)
 	)
 	S_New.Actor_Res = 			vector.create(S_New.Display_Res.x, S_New.Display_Res.y // S_New.Render_Threads)
-	process.Launch_Init(Misc.Host)
+	VM.Launch_Init(Misc.Host)
 	S_New.Actor_RenderNum = 	Params.RenderNum
 	S = 						S_New
 	P = 						Params
