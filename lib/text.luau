@@ -1,20 +1,5 @@
 --!strict
 --!native
-local Settings = require(`../`)()
-local Textures = require( `./textures` )
-local VM = require( `../../plugin/process` )
-assert( VM.Process == VM.MainProcess, `'text.luau' can only be required by the main process.`)
-
--- RGBAu8/vec3 buffer read/write functions
-local u32B: number = 4
-local buffer_vec3 = function(b: buffer ,i: number ): vector
-	local n:number = buffer.readu32(b,i)
-	return vector.create(bit32.band(n,0x000000FF),bit32.rshift(bit32.band(n,0x0000FF00),8),bit32.rshift(bit32.band(n,0x00FF0000),16))*.00392156862745098
-end
-local vec3_buffer = function(b: buffer, i: number, v: vector)
-	v*=0xFF
-	buffer.writeu32(b,i,v.x+bit32.lshift(v.y,8)+bit32.lshift(v.z,16)+0xFF000000)
-end
 
 --[[
 	Penumbra: text.luau
@@ -27,6 +12,22 @@ end
 	If you want to provide your own font texture, ensure that all characters are aligned
 	in a 256x1 monospace row; the renderer will use the image's X and Y dimensions to take care of the rest.
 ]]
+
+local Settings = require(`../`)()
+local Textures = require( `./textures` )
+local VM = require( `../../plugin/process` )
+assert( VM.ThisProcess == VM.MainProcess, `'text.luau' can only be required by the main process.`)
+
+-- RGBAu8/vec3 buffer read/write functions
+local u32B: number = 4
+local buffer_vec3 = function(b: buffer ,i: number ): vector
+	local n:number = buffer.readu32(b,i)
+	return vector.create(bit32.band(n,0x000000FF),bit32.rshift(bit32.band(n,0x0000FF00),8),bit32.rshift(bit32.band(n,0x00FF0000),16))*.00392156862745098
+end
+local vec3_buffer = function(b: buffer, i: number, v: vector)
+	v*=0xFF
+	buffer.writeu32(b,i,v.x+bit32.lshift(v.y,8)+bit32.lshift(v.z,16)+0xFF000000)
+end
 
 local Font_Texture: Textures.Texture = Textures.Load.Base( {{Name="RemoveAlpha"}}, "font_codepage437" )
 local Font_CharSize: vector = vector.create( Font_Texture.Width / 0x100, Font_Texture.Height )
