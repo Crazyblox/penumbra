@@ -322,6 +322,29 @@ function Textures.Load.Base( cfg: LoadTexture?, ...: string ): ...Texture
 	return table.unpack( LoadedTextures )
 end
 
+-- Make a texture with a given input buffer and NOT store it in the textures module
+function Textures.Load.FromBuffer( name: string, input: buffer, dimensions: vector ): Texture
+	local TxSize_I: number = math.sqrt( dimensions.x * dimensions.y )
+	local TxSize_O: number = TxSize_I
+	-- Create original texture
+	local CreatedTexture: Texture = {
+		Buffer = input,
+		Dimensions = vector.create(dimensions.x,dimensions.y,0),
+		Width = dimensions.x,
+		Height = dimensions.y,
+		Width0 = dimensions.x-1,
+		Height0 = dimensions.y-1,
+		FD = vec(
+			1 / dimensions.x,
+			1 / dimensions.y,
+			1 / TxSize_O
+		),
+		Mult = 1 -- Not relevant for a 2D image
+	}
+	table.freeze( CreatedTexture ) 
+	return CreatedTexture
+end
+
 -- Generates Cubemap
 function Textures.Load.Cubemap( cfg: LoadTexture, Name: string ): Cubemap
 	-- Early exit if cubemap with a given name is already loaded/available for returning.
