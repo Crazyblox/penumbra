@@ -1,10 +1,18 @@
 -- Pipeline : Types --
+local Textures = require(`../textures`)
 
-export type Shader = (
+export type Shader = {
+	-- Shader needs its own write buffer due to temporal accumulation.
+	read FB_Slice_Write: buffer,
+	read Run: ShaderModule
+}
+
+export type ShaderModule = (
 	T: number,
-	In: buffer,
-	Out: buffer,
-	IL: boolean?
+	Sync_FB_Slice_Read: buffer,
+	FB_Slice_Write: buffer, --Out: buffer,
+	IL: boolean,
+	FB_Full: Textures.Texture
 ) -> () 
 
 export type Swapchain = {
@@ -15,9 +23,8 @@ export type Swapchain = {
 
 export type Program = {
 	Name: string,
-	Execute: ( Program, buffer? ) -> buffer,
-	Swapchain: Swapchain,
-	Shaders: {Shader}
+	Execute: ( Program, buffer? ) -> (),
+	Shaders: { Shader }
 }
 
 return {}
