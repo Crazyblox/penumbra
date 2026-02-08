@@ -3,7 +3,7 @@ return {
 	project = {
 		name = "Penumbra",
 		author = "Crazyblox",
-		version = "26.04.0",
+		version = "26.02.0",
 		launch_note = "Thanks for using Penumbra! Contributions & reports are welcome at https://github.com/Crazyblox/Penumbra"
 	},
 	runtime = {
