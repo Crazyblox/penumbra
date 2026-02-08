@@ -48,7 +48,7 @@ end
 local Build = {}
 
 function Build.Directory(dir, output)
-	dir = dir or script.Parent.src
+	dir = dir or script.Parent.shader_src
 	local dirs = dir:GetChildren()
 	for _, d in dirs do
 		local shader_type = d.Name
