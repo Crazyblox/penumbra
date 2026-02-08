@@ -9,6 +9,8 @@ local vec_1, vec_0_5, vec_0 = vec( 1, 1, 1 ), vec( .5, .5, .5 ), vec( 0, 0 )
 local iRes:vec = vec( S.Display_Res.x, S.Display_Res.y )
 local iRes_div:vec = iRes + vec( 0, 0, 1 )
 local Sampler_IL_Offset:vec
+local FB_Full: Textures.Texture
+local DoInterlace: boolean = true
 
 -- RGBAu8/vec3 buffer read/write functions
 local u32B: number = 4
@@ -23,42 +25,39 @@ end
 
 -- Texture sampling functions
 local function Sampler_Nearest(t: Textures.Texture, UV: vector ): vector
-	local tWidth:number = t.Width
-	local tHeight:number = t.Height
-	UV *= vector.create( tWidth, tHeight )			-- Expand resolution
-	UV //= 1										-- Set top-left UV integer
-	local x:number	= UV.x % tWidth					-- Wrap U to texture width
-	local y:number	= ( UV.y % tHeight ) * tWidth	-- Wrap V to texture height
-	local i:number	= (x + y) * u32B				-- Set index value
-	return buffer_vec3(t.Buffer, i)					-- Return read value
+	local tW: number, tH: number = t.Width, t.Height
+	UV *= vector.create( tW, tH )			-- Expand resolution
+	UV //= 1								-- Set top-left UV integer
+	local x:number	= UV.x % tW				-- Wrap U to texture width
+	local y:number	= ( UV.y % tH ) * tW	-- Wrap V to texture height
+	local i:number	= (x + y) * u32B		-- Set index value
+	return buffer_vec3(t.Buffer, i)			-- Return read value
 end
 -- Texture sampling functions
 local function Sampler_Nearest_IL(t: Textures.Texture, UV: vector ): vector
-	local tWidth:number = t.Width
-	local tHeight:number = t.Height
-	UV *= vector.create( tWidth, tHeight )			-- Expand resolution
-	UV += Sampler_IL_Offset							-- Add interlace jitter
-	UV //= 1										-- Set top-left UV integer
-	local x:number	= UV.x % tWidth					-- Wrap U to texture width
-	local y:number	= ( UV.y % tHeight ) * tWidth	-- Wrap V to texture height
-	local i:number	= (x + y) * u32B				-- Set index value
-	return buffer_vec3(t.Buffer, i)					-- Return read value
+	local tW: number, tH: number = t.Width, t.Height
+	UV *= vector.create( tW, tH )			-- Expand resolution
+	UV += Sampler_IL_Offset					-- Add interlace jitter
+	UV //= 1								-- Set top-left UV integer
+	local x:number	= UV.x % tW				-- Wrap U to texture width
+	local y:number	= ( UV.y % tH ) * tW	-- Wrap V to texture height
+	local i:number	= (x + y) * u32B		-- Set index value
+	return buffer_vec3(t.Buffer, i)			-- Return read value
 end
 local function Sampler_Linear( t: Textures.Texture, UV: vector ): vector
-	local tWidth:number = t.Width
-	local tHeight:number = t.Height
-	UV *=				vector.create(tWidth, tHeight)	-- Expand resolution
-	UV -=				vector.create( .5, .5 )			-- Shifts texture origin from top-left to middle of pixel
-	local UV_0:vector =	UV // 1							-- Set top-left UV integer
-	local UV_1:vector =	UV_0 + vec_1					-- Set bottom-right UV integer
-	local A:vector =	UV - UV_0						-- Fetch XY lerp alpha
-	local S0:number =	UV_0.x % tWidth					-- Fetch X0 index
-	local S2:number =	UV_1.x % tWidth					-- Fetch X1 index
-	local S1:number =	( UV_0.y % tHeight ) * tWidth	-- Fetch Y0 index
-	local S3:number =	( UV_1.y % tHeight ) * tWidth	-- Fetch Y1 index
-	local b:buffer =	t.Buffer						-- Fetch texture buffer
-	S0, S1, S2, S3 = S0+S1, S2+S1, S0+S3, S2+S3			-- Calculate sample indexes
-	S0 *= u32B; S1 *= u32B; S2 *= u32B; S3 *= u32B		-- Multiply sample indexes
+	local tW: number, tH: number = t.Width, t.Height
+	UV *=				vector.create(tW, tH)		-- Expand resolution
+	UV -=				vector.create( .5, .5 )		-- Shifts texture origin from top-left to middle of pixel
+	local UV_0:vector =	UV // 1						-- Set top-left UV integer
+	local UV_1:vector =	UV_0 + vec_1				-- Set bottom-right UV integer
+	local A:vector =	UV - UV_0					-- Fetch XY lerp alpha
+	local S0:number =	UV_0.x % tW					-- Fetch X0 index
+	local S2:number =	UV_1.x % tW					-- Fetch X1 index
+	local S1:number =	( UV_0.y % tH ) * tW		-- Fetch Y0 index
+	local S3:number =	( UV_1.y % tH ) * tW		-- Fetch Y1 index
+	local b:buffer =	t.Buffer					-- Fetch texture buffer
+	S0, S1, S2, S3 = S0+S1, S2+S1, S0+S3, S2+S3		-- Calculate sample indexes
+	S0 *= u32B; S1 *= u32B; S2 *= u32B; S3 *= u32B	-- Multiply sample indexes
 	return vector.lerp(		
 		vector.lerp( buffer_vec3( b, S0 ), buffer_vec3( b, S1 ), A.x ),	-- Lerp X0Y0 -> X1Y0
 		vector.lerp( buffer_vec3( b, S2 ), buffer_vec3( b, S3 ), A.x ),	-- Lerp X0Y1 -> X1Y1
