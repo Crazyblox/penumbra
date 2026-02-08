@@ -1,3 +1,3 @@
 --!strict
 --!native
-return { "fragment/multi" }
+return { "frag/cave", "filter/blur_box", "filter/unsharp_gaussian" }
