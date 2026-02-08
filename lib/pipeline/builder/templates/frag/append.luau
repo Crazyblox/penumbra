@@ -27,18 +27,21 @@ for i = 1, IL_Start do
 	InterlaceStep()
 end
 
-local function ShaderCall( T:f64, In:buffer, Out:buffer, c:f64, X_i:f64, Y_i:f64 )
-	--vec3_buffer( Out, c, main( buffer_vec3( In, c ), vec( X_i, Y_i ), T ) )
+local function ShaderCall( T: f64, FB_Slice_In: buffer, FB_Slice_Out: buffer, c: f64, X_i: f64, Y_i: f64 )
+	--vec3_buffer( FB_Slice_Out, c, main( buffer_vec3( FB_Slice_In, c ), vec( X_i, Y_i ), T ) )
 	-- ^^^ For inputting previous shader as fragColor
-	vec3_buffer( Out, c, main( vec_1, vec( X_i, Y_i ), T ) )
+	vec3_buffer( FB_Slice_Out, c, main( vec_0, vec( X_i, Y_i ), T ) )
 	-- ^^^ For inputting blank white (More performance)
 end
 
-return function( T:f64, In:buffer, Out:buffer, InterlaceOn: boolean? )
+return function( T: f64, FB_Slice_In: buffer, FB_Slice_Out: buffer, InterlaceOn: boolean, FB_Full_New: Textures.Texture )
+	FB_Full = FB_Full_New
 	T = preprocess(T)
 	-- Set steps & offsets
 	local X_Off:f64, Y_Off:f64, X_Jump:f64, Y_Jump:f64 = 0, 0, 1, 1
-	if InterlaceOn then X_Off, Y_Off, X_Jump, Y_Jump = InterlaceStep() end
+	if InterlaceOn and DoInterlace then
+		X_Off, Y_Off, X_Jump, Y_Jump = InterlaceStep()
+	end
 	-- Set XY byte increments
 	local X_Jump_Bytes:f64 = u32B
 	local Y_Jump_Bytes:f64 = iRes.x * u32B
@@ -51,7 +54,7 @@ return function( T:f64, In:buffer, Out:buffer, InterlaceOn: boolean? )
 	Y_Jump_Bytes *= (Y_Jump-1)
 	for Y_i:f64 = iRes0.y - tStart0.y - Y_Off, iRes0.y - tEnd0.y, -Y_Jump do
 		for X_i:f64 = tStart0.x + X_Off, tEnd0.x, X_Jump do
-			ShaderCall( T, In, Out, c, X_i, Y_i )
+			ShaderCall( T, FB_Slice_In, FB_Slice_Out, c, X_i, Y_i )
 			c += X_Jump_Bytes
 		end
 		c += Y_Jump_Bytes
