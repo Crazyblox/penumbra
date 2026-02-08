@@ -21,12 +21,12 @@
 	to write your own shell script to do this.
 ]]
 
-local function BuildModule(input: ModuleScript): ModuleScript
+local function BuildShader(in_prepend: ModuleScript, in_shader: ModuleScript, in_append: ModuleScript): ModuleScript
 	-- Get template modules
 	local scripts: {ModuleScript} = {
-		script.template.prepend,
-		input or script.shader,
-		script.template.append
+		in_prepend or script.template.frag.prepend,
+		in_shader or script.template.frag.shader,
+		in_append or script.template.frag.append
 	}
 	local outputSource: string = `--!strict\n--!native\n`
 	for _, module: ModuleScript in scripts do
@@ -40,19 +40,33 @@ local function BuildModule(input: ModuleScript): ModuleScript
 	end
 	local outputModule = Instance.new("ModuleScript")
 	outputModule.Source = outputSource
-	outputModule.Name = input.Name
+	outputModule.Name = in_shader.Name
 	print("Built inlined module:", outputModule)
 	return outputModule
 end
 
 local Build = {}
 
--- Maybe in the future!!!
--- function Build.Directory(dir)
--- end
+function Build.Directory(dir, output)
+	dir = dir or script.Parent.src
+	local dirs = dir:GetChildren()
+	for _, d in dirs do
+		local shader_type = d.Name
+		local modules = d:GetChildren()
+		for _, m in modules do
+			if m:IsA("ModuleScript") then
+				BuildShader(
+					script.template[shader_type].prepend,
+					m,
+					script.template[shader_type].append
+				).Parent = ( output and output[shader_type] or script.parent.shaders[shader_type] )
+			end
+		end
+	end
+end
 
-function Build.Once(input: ModuleScript, output: Instance?): ModuleScript
-	BuildModule(input).Parent = output or script.build
+function Build.OnceFromSource(input: ModuleScript, output: Instance?): ModuleScript
+	BuildShader(input).Parent = output or script.parent.shaders
 end
 
 return Build
