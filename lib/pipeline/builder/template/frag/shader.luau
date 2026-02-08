@@ -2,7 +2,7 @@
 --!nolint
 --/INLINE
 local iChannel0: Textures.Texture = Textures.Load.Base( {}, "rustymetal" )
-local texture = Sampler_Nearest -- Sampler_Nearest_IL, Sampler_Linear
+local texture = Sampler_Nearest -- Sampler_Nearest_IL, Sampler_Linear, Sampler_BoxBlur, Sampler_Unsharp
 
 local function main( fragColor:vec, fragCoord:vec, iTime:f64 ):vec
 	-- Gradient - Sourced from [https://www.shadertoy.com/new]
