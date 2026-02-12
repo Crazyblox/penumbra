@@ -15,7 +15,7 @@ Ensure you get it set up successfully in your host runtime before continuing.
 Link: https://github.com/Crazyblox/Pajamas
 
 # Setup - Roblox:
-Look for the latest release of Penumbra (here)[https://github.com/Crazyblox/penumbra/releases/] and download the .rbxm for the drag and drop version of Penumbra which is packaged with the Pajamas runtime.
+Look for the latest release of Penumbra [here](https://github.com/Crazyblox/penumbra/releases/) and download the .rbxm for the drag and drop version of Penumbra which is packaged with the Pajamas runtime.
 
 # Contributions:
 Issues & PRs are welcome; the intent of Penumbra is to remain as minimal and elegant as possible.
