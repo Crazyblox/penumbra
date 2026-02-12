@@ -7,17 +7,15 @@ The project contains many example fragment shaders to get started, and is config
 
 Each major module has its purpose described at the top, and comments are provided to help for context.
 
-# Setup:
+# Setup - Luau:
 The Penumbra directory needs to be sat as a direct child of the Pajamas directory in order to run.
 
 Ensure you get it set up successfully in your host runtime before continuing.
 
 Link: https://github.com/Crazyblox/Pajamas
 
-# Notes - Roblox:
-Looking to use this in Roblox?
-
-Make sure to use the 'file sync' feature so that you can load the code directly into Roblox Studio.
+# Setup - Roblox:
+Look for the .rbxm file in the latest releases for a drag and drop version of Penumbra that is packaged with the Pajamas runtime.
 
 # Contributions:
 Issues & PRs are welcome; the intent of Penumbra is to remain as minimal and elegant as possible.
